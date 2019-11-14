@@ -156,6 +156,11 @@ Home directory can be found in a shared folder called "home"
 			Default:  "",
 			Help:     "The command used to read sha1 hashes. Leave blank for autodetect.",
 			Advanced: true,
+		}, {
+			Name:     "skip_links",
+			Default:  false,
+			Help:     "Set to skip any symlinks and any other non regular files.",
+			Advanced: true,
 		}},
 	}
 	fs.Register(fsi)
@@ -177,6 +182,7 @@ type Options struct {
 	SetModTime        bool   `config:"set_modtime"`
 	Md5sumCommand     string `config:"md5sum_command"`
 	Sha1sumCommand    string `config:"sha1sum_command"`
+	SkipLinks         bool   `config:"skip_links"`
 }
 
 // Fs stores the interface to the remote SFTP files
@@ -601,6 +607,9 @@ func (f *Fs) List(ctx context.Context, dir string) (entries fs.DirEntries, err e
 		// If file is a symlink (not a regular file is the best cross platform test we can do), do a stat to
 		// pick up the size and type of the destination, instead of the size and type of the symlink.
 		if !info.Mode().IsRegular() {
+			if f.opt.SkipLinks {
+				continue
+			}
 			oldInfo := info
 			info, err = f.stat(remote)
 			if err != nil {
